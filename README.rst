@@ -21,7 +21,7 @@ Example
 
 .. code-block:: python
 
-    from dagging import Dagging
+    from dagging import DaggingClassifier
     from sklearn.datasets import load_iris 
 
     # Load Iris from from scikit-learn.
