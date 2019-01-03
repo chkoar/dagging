@@ -13,7 +13,7 @@ from sklearn.utils.validation import check_is_fitted, check_random_state
 class BaseDagging(BaseEnsemble):
     def __init__(self,
                  base_estimator=None,
-                 n_estimators=3,
+                 n_estimators=10,
                  voting='soft',
                  random_state=None):
         super(BaseDagging, self).__init__(
@@ -114,7 +114,7 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
 
     def __init__(self,
                  base_estimator=None,
-                 n_estimators=3,
+                 n_estimators=10,
                  voting='soft',
                  random_state=None):
         super(DaggingClassifier, self).__init__(
@@ -225,7 +225,7 @@ class DaggingRegressor(BaseDagging, RegressorMixin):
 
     def __init__(self,
                  base_estimator=None,
-                 n_estimators=3,
+                 n_estimators=10,
                  random_state=None):
         super(DaggingRegressor, self).__init__(
             base_estimator=base_estimator,
