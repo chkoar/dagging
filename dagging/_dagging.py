@@ -1,6 +1,6 @@
 import numpy as np
 
-from sklearn.base import ClassifierMixin, RegressorMixin, is_classifier, is_regressor
+from sklearn.base import ClassifierMixin, RegressorMixin, is_classifier
 from sklearn.ensemble.base import BaseEnsemble
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
