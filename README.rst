@@ -59,7 +59,7 @@ If you prefer, you can clone it and run the setup.py file. Use the following
 commands to get a copy from GitHub and install all dependencies::
 
   git clone https://github.com/chkoar/dagging.git
-  cd imbalanced-learn
+  cd dagging
   pip install .
 
 Or install using pip and GitHub::
