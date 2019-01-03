@@ -43,9 +43,9 @@ Dependencies
 
 The dependency requirements are based on the last scikit-learn release:
 
-* scipy(>=0.13.3)
-* numpy(>=1.8.2)
-* scikit-learn(>=0.20)
+* scipy
+* numpy
+* scikit-learn
 
 Installation
 ------------
