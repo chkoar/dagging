@@ -27,9 +27,9 @@ Example
     # Load Iris from from scikit-learn.
     X, y = load_iris(True)
 
-    model = Dagging(n_estimators=50,
-                    voting='hard',
-                    random_state=0)
+    model = DaggingClassifier(n_estimators=50,
+                              voting='hard',
+                              random_state=0)
 
     # Train the model.
     model.fit(X,y)
