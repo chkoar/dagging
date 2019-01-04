@@ -48,7 +48,7 @@ class BaseDagging(BaseEnsemble):
         self._validate_estimator()
         if is_classifier(self.base_estimator_):
             check_classification_targets(y)
-            if isinstance(y, np.ndarray) and len(y.shape) > 1 and y.shape[1] > 1:
+            if isinstance(y, np.ndarray) and len(y.shape) > 1 and y.shape[1] > 1: # noqa:
                 raise NotImplementedError('Multilabel and multi-output'
                                           ' classification is not supported.')
             self.le_ = LabelEncoder().fit(y)
