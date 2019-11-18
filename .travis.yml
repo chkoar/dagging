@@ -1,23 +1,31 @@
 language: python
 python:
-  - 2.7
-  - 3.4
-  - 3.5
   - 3.6
+  - 3.7
+env:
+- SKLEARN_VERSION="*"
+- SKLEARN_VERSION="nightly"
+
 cache:
   directories:
     - $HOME/.cache/pip
     - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
 
 install:
-  # Install this package and the packages listed in requirements.txt.
-  - pip install .
-  # Install extra requirements for running tests and building docs.
-  - pip install -r requirements-dev.txt
+  - pip install numpy scipy
+  - |
+      if [ $SKLEARN_VERSION = "nightly" ]; then
+          pip install --pre -f https://sklearn-nightly.scdn8.secure.raxcdn.com scikit-learn
+      else
+          pip install scikit-learn
+      fi
+
+  - pip install -e .
+  - pip install codecov black flake8 invoke pytest pytest-cov
 
 script:
-  - coverage run -m pytest  # Run the tests and check for test coverage.
-  - coverage report -m  # Generate test coverage report.
-  - codecov  # Upload the report to codecov.
-  - flake8
-  - make -C docs html  # Build the documentation.
+  - inv test
+  - inv lint
+
+after_success:
+  - codecov

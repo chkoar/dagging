@@ -1,7 +1,5 @@
 import numpy as np
-
 from sklearn.base import ClassifierMixin, RegressorMixin, is_classifier
-from sklearn.ensemble.base import BaseEnsemble
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -9,17 +7,17 @@ from sklearn.utils import check_X_y
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_is_fitted, check_random_state
 
+try:
+    from sklearn.ensemble._base import BaseEnsemble
+except Exception:
+    from sklearn.ensemble.base import BaseEnsemble
+
 
 class BaseDagging(BaseEnsemble):
-    def __init__(self,
-                 base_estimator=None,
-                 n_estimators=10,
-                 voting='soft',
-                 random_state=None):
+    def __init__(self, base_estimator=None, n_estimators=10, random_state=None):
         super(BaseDagging, self).__init__(
-            base_estimator=base_estimator,
-            n_estimators=n_estimators)
-        self.voting = voting
+            base_estimator=base_estimator, n_estimators=n_estimators
+        )
         self.random_state = random_state
 
     def fit(self, X, y):
@@ -39,20 +37,23 @@ class BaseDagging(BaseEnsemble):
         -------
         self : object
         """
-        X, y = check_X_y(X, y)
-
-        if self.voting not in ('soft', 'hard'):
-            raise ValueError("Voting must be 'soft' or 'hard'; got (voting=%r)"
-                             % self.voting)
+        X, y = check_X_y(X, y, ensure_min_samples=2)
+        self.voting_ = (
+            "soft" if hasattr(self.base_estimator, "predict_proba") else "hard"
+        )
 
         self._validate_estimator()
         if is_classifier(self.base_estimator_):
             check_classification_targets(y)
-            if isinstance(y, np.ndarray) and len(y.shape) > 1 and y.shape[1] > 1: # noqa:
-                raise NotImplementedError('Multilabel and multi-output'
-                                          ' classification is not supported.')
+            if (
+                isinstance(y, np.ndarray) and len(y.shape) > 1 and y.shape[1] > 1
+            ):  # noqa:
+                raise NotImplementedError(
+                    "Multilabel and multi-output" " classification is not supported."
+                )
             self.le_ = LabelEncoder().fit(y)
             self.classes_ = self.le_.classes_
+            self.n_classes_ = self.le_.classes_.shape[0]
             transformed_y = self.le_.transform(y)
         else:
             transformed_y = y
@@ -60,13 +61,23 @@ class BaseDagging(BaseEnsemble):
         self.estimators_ = []
 
         rs = check_random_state(self.random_state)
-        splitter = check_cv(cv=self.n_estimators,
-                            y=transformed_y,
-                            classifier=is_classifier(self.base_estimator_))
+        splitter = check_cv(
+            cv=self.n_estimators,
+            y=transformed_y,
+            classifier=is_classifier(self.base_estimator_),
+        )
 
-        for _, index in splitter.split(X, transformed_y):
-            estimator = self._make_estimator(append=False,
-                                             random_state=rs)
+        try:
+            indexes = list(splitter.split(X, transformed_y))
+        except ValueError as ex:
+            msg = (
+                "n_estimators cannot be greater than the"
+                " number of members in majority class."
+            )
+            raise type(ex)(msg)
+
+        for _, index in indexes:
+            estimator = self._make_estimator(append=False, random_state=rs)
             estimator.fit(X[index], transformed_y[index])
             self.estimators_.append(estimator)
 
@@ -88,11 +99,6 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
         If None, then the base estimator is a decision tree.
     n_estimators : int, optional (default=3)
         The number of base estimators in the ensemble.
-    voting : str, {'hard', 'soft'} (default='soft')
-        If 'hard', uses predicted class labels for majority rule voting.
-        Else if 'soft', predicts the class label based on the argmax of
-        the sums of the predicted probabilities, which is recommended for
-        an ensemble of well-calibrated classifiers.
     random_state : int, RandomState instance or None, optional (default=None)
         If int, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
@@ -105,6 +111,7 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
         The base estimator from which the ensemble is grown.
     estimators_ : list of estimators
         The collection of fitted base estimators.
+    voting_ : method used for voting among classifiers
     References
     ----------
     .. [1] Ting, K. M., Witten, I. H.: Stacking Bagged and Dagged Models.
@@ -112,16 +119,12 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
            San Francisco, CA, 367-375, 1997
     """
 
-    def __init__(self,
-                 base_estimator=None,
-                 n_estimators=10,
-                 voting='soft',
-                 random_state=None):
+    def __init__(self, base_estimator=None, n_estimators=10, random_state=None):
         super(DaggingClassifier, self).__init__(
             base_estimator=base_estimator,
             n_estimators=n_estimators,
-            voting=voting,
-            random_state=random_state)
+            random_state=random_state,
+        )
 
     def predict(self, X):
         """ Predict class labels for X.
@@ -135,21 +138,23 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
         maj : array-like, shape = [n_samples]
             Predicted class labels.
         """
+        check_is_fitted(self, "estimators_")
+        try:
+            preds = self._compute_soft_voting(X)
+        except Exception:
+            preds = self._compute_hard_voting(X)
 
-        check_is_fitted(self, 'estimators_')
-        if self.voting == 'soft':
-            maj = np.argmax(self.predict_proba(X), axis=1)
+        return self.le_.inverse_transform(preds)
 
-        else:  # 'hard' voting
-            predictions = self._predict(X)
-            maj = np.apply_along_axis(
-                lambda x: np.argmax(
-                    np.bincount(x)),
-                axis=1, arr=predictions)
+    def _compute_hard_voting(self, X):
+        return np.argmax(self.predict_proba(X), axis=1)
 
-        maj = self.le_.inverse_transform(maj)
-
-        return maj
+    def _compute_soft_voting(self, X):
+        predictions = self._predict(X)
+        ret = np.apply_along_axis(
+            lambda x: np.argmax(np.bincount(x)), axis=1, arr=predictions
+        )
+        return ret
 
     def _predict(self, X):
         """Collect results from clf.predict calls. """
@@ -161,10 +166,7 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
 
     def _predict_proba(self, X):
         """Predict class probabilities for X in 'soft' voting """
-        if self.voting == 'hard':
-            raise AttributeError("predict_proba is not available when"
-                                 " voting=%r" % self.voting)
-        check_is_fitted(self, 'estimators_')
+        check_is_fitted(self, "estimators_")
         avg = np.average(self._collect_probas(X), axis=0)
         return avg
 
@@ -186,7 +188,8 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
     def _validate_estimator(self):
         """Check the estimator and set the base_estimator_ attribute."""
         super(DaggingClassifier, self)._validate_estimator(
-            default=DecisionTreeClassifier())
+            default=DecisionTreeClassifier()
+        )
 
 
 class DaggingRegressor(BaseDagging, RegressorMixin):
@@ -223,14 +226,12 @@ class DaggingRegressor(BaseDagging, RegressorMixin):
            San Francisco, CA, 367-375, 1997
     """
 
-    def __init__(self,
-                 base_estimator=None,
-                 n_estimators=10,
-                 random_state=None):
+    def __init__(self, base_estimator=None, n_estimators=10, random_state=None):
         super(DaggingRegressor, self).__init__(
             base_estimator=base_estimator,
             n_estimators=n_estimators,
-            random_state=random_state)
+            random_state=random_state,
+        )
 
     def predict(self, X):
         """ Predict class labels for X.
@@ -244,7 +245,7 @@ class DaggingRegressor(BaseDagging, RegressorMixin):
         maj : array-like, shape = [n_samples]
             Predicted class labels.
         """
-        check_is_fitted(self, 'estimators_')
+        check_is_fitted(self, "estimators_")
         predictions = []
         for estimator in self.estimators_:
             predictions.append(estimator.predict(X))
@@ -253,4 +254,5 @@ class DaggingRegressor(BaseDagging, RegressorMixin):
     def _validate_estimator(self):
         """Check the estimator and set the base_estimator_ attribute."""
         super(DaggingRegressor, self)._validate_estimator(
-            default=DecisionTreeRegressor())
+            default=DecisionTreeRegressor()
+        )
