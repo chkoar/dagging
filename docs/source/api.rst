@@ -1,5 +1,12 @@
-API Documentation
+API Reference
 =================
 
-.. automodule:: dagging
-   :members:
+.. currentmodule:: dagging
+
+.. autosummary::
+   :toctree: stubs
+    
+   DaggingClassifier
+   DaggingRegressor
+
+      

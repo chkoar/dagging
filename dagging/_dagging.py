@@ -111,7 +111,8 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
         The base estimator from which the ensemble is grown.
     estimators_ : list of estimators
         The collection of fitted base estimators.
-    voting_ : method used for voting among classifiers
+    voting_ : string
+        The method used for voting among classifiers.
     References
     ----------
     .. [1] Ting, K. M., Witten, I. H.: Stacking Bagged and Dagged Models.

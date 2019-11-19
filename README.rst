@@ -8,6 +8,10 @@ Dagging
 .. image:: https://codecov.io/gh/chkoar/dagging/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/chkoar/dagging
 
+.. image:: https://readthedocs.org/projects/dagging/badge/?version=latest
+  :target: https://dagging.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
+
 .. image:: https://img.shields.io/pypi/v/dagging.svg
         :target: https://pypi.python.org/pypi/dagging
 
