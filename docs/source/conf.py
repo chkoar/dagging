@@ -56,7 +56,7 @@ exclude_patterns = []
 
 autosummary_generate = True
 plot_gallery = True
-numpydoc_show_class_members=False
+numpydoc_show_class_members = False
 
 # -- Options for HTML output -------------------------------------------------
 

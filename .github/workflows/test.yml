@@ -1,0 +1,35 @@
+name: Unit testing
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+        scikit-learn: ["scikit-learn", "--pre -f https://sklearn-nightly.scdn8.secure.raxcdn.com scikit-learn"]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install ${{ matrix.scikit-learn }}
+        pip install -e .
+        pip install codecov black flake8 invoke pytest pytest-cov
+    - name: Lint with flake8
+      run: inv lint
+    - name: Test 
+      run: inv test
+    - name: Code Coverage 
+      run: codecov
+

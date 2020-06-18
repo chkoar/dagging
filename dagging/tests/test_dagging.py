@@ -1,6 +1,6 @@
 import pytest
 
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_iris, load_boston
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.utils.estimator_checks import check_estimator
@@ -19,7 +19,7 @@ def test_check_dagging_regressor():
 
 
 def test_dagging_classifier_hard_voting():
-    X, y = load_iris(True)
+    X, y = load_iris(return_X_y=True)
     model = DaggingClassifier(
         SVC(gamma="scale", random_state=0), random_state=0, n_estimators=3
     )
@@ -29,7 +29,7 @@ def test_dagging_classifier_hard_voting():
 
 
 def test_dagging_classifier_soft_voting():
-    X, y = load_iris(True)
+    X, y = load_iris(return_X_y=True)
     model = DaggingClassifier(GaussianNB(), random_state=0, n_estimators=3)
     model.fit(X, y)
     model.score(X, y)
@@ -37,7 +37,14 @@ def test_dagging_classifier_soft_voting():
 
 
 def test_dagging_classifier_too_many_estimators():
-    X, y = load_iris(True)
+    X, y = load_iris(return_X_y=True)
     model = DaggingClassifier(GaussianNB(), random_state=0, n_estimators=300)
+    with pytest.raises(ValueError):
+        model.fit(X, y)
+
+
+def test_dagging_regressor_too_many_estimators():
+    X, y = load_boston(return_X_y=True)
+    model = DaggingRegressor(random_state=0, n_estimators=3000)
     with pytest.raises(ValueError):
         model.fit(X, y)

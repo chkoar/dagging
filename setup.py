@@ -1,9 +1,6 @@
 from os import path
 from setuptools import setup, find_packages
 
-import versioneer
-
-
 here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, "README.rst")) as readme_file:
@@ -33,8 +30,7 @@ EXTRAS_REQUIRE = {
 
 setup(
     name="dagging",
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    version="0.2.dev",
     description="Python package implementing the dagging method",
     long_description=readme,
     author="Christos Aridas",

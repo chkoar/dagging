@@ -81,3 +81,5 @@ target/
 /.vscode
 /docs/source/auto_examples
 /docs/source/stubs
+/poetry.lock
+/pyproject.toml

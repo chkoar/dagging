@@ -1,3 +1,5 @@
+from collections import Counter
+
 import numpy as np
 from sklearn.base import ClassifierMixin, RegressorMixin, is_classifier
 from sklearn.model_selection import check_cv
@@ -41,9 +43,9 @@ class BaseDagging(BaseEnsemble):
         self.voting_ = (
             "soft" if hasattr(self.base_estimator, "predict_proba") else "hard"
         )
-
         self._validate_estimator()
-        if is_classifier(self.base_estimator_):
+        is_base_classifier = is_classifier(self.base_estimator_)
+        if is_base_classifier:
             check_classification_targets(y)
             if (
                 isinstance(y, np.ndarray) and len(y.shape) > 1 and y.shape[1] > 1
@@ -59,22 +61,25 @@ class BaseDagging(BaseEnsemble):
             transformed_y = y
 
         self.estimators_ = []
-
         rs = check_random_state(self.random_state)
         splitter = check_cv(
-            cv=self.n_estimators,
-            y=transformed_y,
-            classifier=is_classifier(self.base_estimator_),
+            cv=self.n_estimators, y=transformed_y, classifier=is_base_classifier,
         )
-
+        splitter.random_state = rs
+        splitter.shuffle = True
         try:
             indexes = list(splitter.split(X, transformed_y))
         except ValueError as ex:
-            msg = (
-                "n_estimators cannot be greater than the"
-                " number of members in majority class."
-            )
-            raise type(ex)(msg)
+            if is_base_classifier:
+                n_maj = Counter(y).most_common(1)[0][1]
+                msg = (
+                    f"n_estimators={self.n_estimators} cannot be greater than the"
+                    f" number={n_maj} of samples in majority class."
+                )
+            else:
+                msg = f"n_estimators={self.n_estimators} is greater than the number"
+                " of samples: n_samples={X.shape[0]}."
+            raise ValueError(msg) from ex
 
         for _, index in indexes:
             estimator = self._make_estimator(append=False, random_state=rs)
@@ -111,6 +116,8 @@ class DaggingClassifier(BaseDagging, ClassifierMixin):
         The base estimator from which the ensemble is grown.
     estimators_ : list of estimators
         The collection of fitted base estimators.
+    n_estimators_: int
+        The actual used estimators
     voting_ : string
         The method used for voting among classifiers.
     References

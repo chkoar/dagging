@@ -2,8 +2,8 @@
 Dagging
 ===============================
 
-.. image:: https://img.shields.io/travis/chkoar/dagging.svg
-        :target: https://travis-ci.org/chkoar/dagging
+.. image:: https://github.com/chkoar/dagging/workflows/Python%20application/badge.svg
+        :target: https://travis-ci.org/chkoar/dagging/actions
 
 .. image:: https://codecov.io/gh/chkoar/dagging/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/chkoar/dagging
